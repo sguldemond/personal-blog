@@ -1,0 +1,3 @@
+[submodule "blog/docs/blog-python-cli-yaml"]
+	path = blog/docs/blog-python-cli-yaml
+	url = https://github.com/sguldemond/blog-python-cli-yaml
