@@ -1,3 +1,7 @@
-site_name: My Docs
+site_name: Stan Guldemond
+site_description: Stan Guldemond's personal blog
+site_author: stanguldemond
+site_url: https://stanguldemond.nl/blog
+
 theme:
   name: gitbook
