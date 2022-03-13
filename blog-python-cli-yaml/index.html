@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<title>Building a CLI application in Python (& some YAML) - Stan Guldemond</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="description" content="Stan Guldemond's personal blog">
+<meta name="generator" content="mkdocs-1.2.3, mkdocs-gitbook-1.0.7">
+<meta name="author" content="stanguldemond">
+<link rel="shortcut icon" href="../images/favicon.ico" type="image/x-icon">
+<meta name="HandheldFriendly" content="true"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta rel="next" href="" />
+<link href="../css/style.min.css" rel="stylesheet"> 
+</head>
+
+<body>
+<div class="book">
+<div class="book-summary">
+<div id="book-search-input" role="search">
+<input type="text" placeholder="Type to search" />
+</div> <!-- end of book-search-input -->
+
+<nav role="navigation">
+<ul class="summary">
+<li>
+<a href=".." target="_blank" class="custom-link">Stan Guldemond</a>
+</li>
+<li class="divider"></li>
+<li class="chapter" data-path="">
+<a href="..">Welcome to MkDocs</a>
+<li class="header">Blog python cli yaml</li>
+
+<li>
+<a href="./" class="active">Building a CLI application in Python (& some YAML)</a>
+</li>
+
+<li class="divider"></li>
+
+
+
+<li><a href="http://www.mkdocs.org">
+Published with MkDocs
+</a></li>
+
+<li><a href="https://github.com/GitbookIO/theme-default">
+Theme by GitBook
+</a></li>
+</ul>
+
+</nav>
+
+</div> <!-- end of book-summary -->
+
+<div class="book-body">
+<div class="body-inner">
+<div class="book-header" role="navigation">
+
+<!-- Title -->
+<h1>
+<i class="fa fa-circle-o-notch fa-spin"></i>
+<a href="." ></a>
+</h1>
+
+</div> <!-- end of book-header -->
+
+<div class="page-wrapper" tabindex="-1" role="main">
+<div class="page-inner">
+<div id="book-search-results">
+<div class="search-noresults">
+
+<section class="normal markdown-section">
+
+
+
+<h1 id="building-a-cli-application-in-python-some-yaml">Building a CLI application in Python (&amp; some YAML)</h1>
+<p>Around four years ago I started programming in Python and ever since I really enjoy it. At the same time I started using more Linux, first for deploying small experimental applications and later as my personal OS. I really like to find my way around Linux using the terminal, and the concept of a command line interface spoke to me.</p>
+<p>When there is a good enough reason, for a project, I like to create small applications in Python with a CLI. I would like to share how I've made my most recent CLI with a YAML config file.</p>
+<h2 id="setup">Setup</h2>
+<p>Firsly I'll setup a small application to create an CLI for:</p>
+<pre><code>➜  python-cli-yaml
+.
+├── app
+│   ├── main.py
+│   ├── cli.py
+│   ├── config.py
+│   └── __init__.py
+└── venv
+</code></pre>
+<p>The next thing to do is to make sure the <code>PYTHONPATH</code> environment variable is set. I make sure I'm inside the root folder of the project (<code>python-cli-yaml</code>) and then do <code>export PYTHONPATH=$(pwd)</code>.</p>
+<h2 id="code">Code</h2>
+<h3 id="create-simple-functions">Create simple functions</h3>
+<p>In need some functions that I will call later, <code>main.py</code>:</p>
+<pre><code class="language-python">WELCOME_MSG = &quot;Hello world!&quot;
+
+def print_welcome_message():
+    print(WELCOME_MSG)
+
+
+def print_incoming_message(msg: str):
+    print(&quot;Incoming message:&quot;, msg)
+
+
+if __name__ == &quot;__main__&quot;:
+    print_welcome_message()
+    print_incoming_message(&quot;Foobar!&quot;)
+</code></pre>
+<p>We can test these functions simply by running the file <code>python app/main.py</code></p>
+<h3 id="setup-cli">Setup CLI</h3>
+<p>I'm using Click for this, so installed it: <code>pip install click</code></p>
+<p>In another file I can now start setting up my CLI code, <code>cli.py</code>:</p>
+<pre><code class="language-python">import click
+
+from app.main import print_welcome_message, print_incoming_message
+
+
+@click.group()
+def cli():
+    pass
+
+
+@click.command()
+def welcome():
+    print_welcome_message()
+
+
+@click.command()
+@click.argument('msg', required=True)
+def echo(msg: str):
+    print_incoming_message(msg)
+
+
+cli.add_command(welcome)
+cli.add_command(echo)
+
+
+if __name__ == &quot;__main__&quot;:
+    cli()
+</code></pre>
+<p>With this code both simple functions from main can be called:</p>
+<pre><code class="language-bash">python app/cli.py welcome
+python app/cli.py echo 'Hi there!'
+</code></pre>
+<h3 id="setup-yaml">Setup YAML</h3>
+<p>To make it a little bit more interesting I add a configuration file to read, e.g. the welcome message from:</p>
+<pre><code class="language-bash">touch app-config.txt
+echo 'welcome_msg: &quot;Hey you!&quot;' &gt;&gt; app-config.txt 
+</code></pre>
+<p>I need some more code to parse this file, <code>config.py</code>:</p>
+<pre><code class="language-python">import os
+
+import yaml
+
+
+config_file = os.getenv(&quot;APP_CONFIG_FILE&quot;)
+print(f&quot;Config file set to: &quot;, config_file)
+
+with open(config_file, 'r') as file:
+    config = yaml.safe_load(file)
+
+WELCOME_MSG = config.get('welcome_msg', None)
+
+
+if __name__ == &quot;__main__&quot;:
+    print(WELCOME_MSG)
+</code></pre>
+<p>I'm using a environment variable to point to the config file. Later on I will set this variable from the CLI code. To test this I can run:</p>
+<pre><code class="language-bash">export APP_CONFIG_FILE=app-config.yml
+python config.py
+</code></pre>
+<p>Now I have all the elements ready, I just need to connect the CLI with the config code.
+I add a argument to the main cli function and set the input as enviroment variable, <code>cli.py</code>:</p>
+<pre><code class="language-python">import os
+
+@click.group()
+@click.option(&quot;--config&quot;, default=None, help=&quot;Config file&quot;)
+def cli(config):
+    os.environ[&quot;APP_CONFIG_FILE&quot;] = config
+
+...
+</code></pre>
+<p>Now I can run the CLI file and point to the config file from there, no need to set <code>APP_CONFIG_FILE</code> manually:</p>
+<pre><code class="language-bash">python app/cli_simple.py --config=app-config.yml welcome
+</code></pre>
+
+
+</section>
+</div> <!-- end of search-noresults -->
+<div class="search-results">
+<div class="has-results">
+
+<h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+<ul class="search-results-list"></ul>
+
+</div> <!-- end of has-results -->
+<div class="no-results">
+
+<h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+
+</div> <!-- end of no-results -->
+</div> <!-- end of search-results -->
+</div> <!-- end of book-search-results -->
+
+</div> <!-- end of page-inner -->
+</div> <!-- end of page-wrapper -->
+
+</div> <!-- end of body-inner -->
+
+</div> <!-- end of book-body -->
+<script src="../js/main.js"></script>
+<script src="../search/main.js"></script>
+<script src="../js/gitbook.min.js"></script>
+<script src="../js/theme.min.js"></script>
+</body>
+</html>
